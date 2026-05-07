@@ -423,3 +423,44 @@ class TestInvoiceEcotax(TestInvoiceEcotaxCommon):
 
     def test_05_product_variants(self):
         self._test_05_product_variants()
+
+    def test_06_search_all_ecotax_lines(self):
+        """Test searching variants by their combined ecotax lines."""
+        variants = self._make_product_variants(self.ecotax_fixed)
+        variant_with_additional_ecotax = variants[0]
+        variant_without_additional_ecotax = variants[1]
+        additional_ecotax_line = self.env["ecotax.line.product"].create(
+            {
+                "product_id": variant_with_additional_ecotax.id,
+                "classification_id": self.ecotax_weight.id,
+            }
+        )
+        products = self.env["product.product"]
+        search_domain = [("id", "in", variants.ids)]
+
+        self.assertEqual(
+            products.search(
+                search_domain
+                + [
+                    (
+                        "all_ecotax_line_product_ids",
+                        "in",
+                        additional_ecotax_line.ids,
+                    )
+                ]
+            ),
+            variant_with_additional_ecotax,
+        )
+        self.assertEqual(
+            products.search(
+                search_domain
+                + [
+                    (
+                        "all_ecotax_line_product_ids",
+                        "not in",
+                        additional_ecotax_line.ids,
+                    )
+                ]
+            ),
+            variant_without_additional_ecotax,
+        )
